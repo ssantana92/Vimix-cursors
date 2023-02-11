@@ -1,39 +1,54 @@
 #!/usr/bin/env bash
 
 # check command avalibility
-has_command() {
-  "$1" -v $1 > /dev/null 2>&1
+has() {
+  command -v $1 > /dev/null 2>&1
 }
 
-if [ ! "$(which xcursorgen 2> /dev/null)" ]; then
-  echo xorg-xcursorgen needs to be installed to generate the cursors.
-  if has_command zypper; then
-    sudo zypper in xorg-xcursorgen
-  elif has_command apt; then
-    sudo apt install xorg-xcursorgen
-  elif has_command dnf; then
-    sudo dnf install -y xorg-xcursorgen
-  elif has_command dnf; then
-    sudo dnf install xorg-xcursorgen
-  elif has_command pacman; then
-    sudo pacman -S --noconfirm xorg-xcursorgen
+xcursorgen_ok=false
+cairosvg_ok=false
+
+if has xcursorgen; then
+  xcursorgen_ok=true
+else
+  echo 'Xcursorgen needs to be installed to generate the cursors.' >&2
+  if has zypper; then
+    echo 'Try running: sudo zypper in -y xorg-xcursorgen' >&2
+  elif has apt; then
+    echo 'Try running: apt -y install xorg-xcursorgen' >&2
+  elif has dnf; then
+    echo 'Try running: sudo dnf install -y xorg-xcursorgen' >&2
+  elif has pacman; then
+    echo 'Try running: sudo pacman -S --noconfirm xorg-xcursorgen' >&2
+  elif has xbps-install; then
+    echo 'Try running: sudo xbps-install -y xcursorgen' >&2
+  else
+    echo 'Try installing it through your distribution\'s package manager or build from source.' >&2
   fi
 fi
 
-if [ ! "$(which cairosvg 2> /dev/null)" ]; then
-  echo xorg-xcursorgen needs to be installed to generate png files.
-  if has_command zypper; then
-    sudo zypper in python-cairosvg
-  elif has_command apt; then
-    sudo apt install python-cairosvg
-  elif has_command dnf; then
-    sudo dnf install -y python-cairosvg
-  elif has_command dnf; then
-    sudo dnf install python-cairosvg
-  elif has_command pacman; then
-    sudo pacman -S --noconfirm python-cairosvg
+if has cairosvg; then
+  cairosvg_ok=true
+else
+  echo 'Cairo SVG needs to be installed to generate png files.' >&2
+  if has zypper; then
+    echo 'Try running: sudo zypper in -y python-cairosvg' >&2
+  elif has apt; then
+    echo 'Try running: sudo apt -y install python-cairosvg' >&2
+  elif has dnf; then
+    echo 'Try running: sudo dnf install -y python-cairosvg' >&2
+  elif has pacman; then
+    echo 'Try running: sudo pacman -S --noconfirm python-cairosvg' >&2
+  elif has pip3; then
+    echo 'Try running: sudo pip3 install -no-input CairoSVG' >&2
+  elif has pip; then
+    echo 'Try running: sudo pip install -no-input CairoSVG' >&2
+  else
+    echo 'Try installing it through your distribution\'s package manager, Python\'s pip or build from source.' >&2
   fi
 fi
+
+if ! $xcursorgen_ok && $cairosvg_ok; then exit 1; fi 
 
 function create {
 	cd "$SRC"
@@ -44,7 +59,7 @@ function create {
 	find . -name "*.svg" -type f -exec sh -c 'echo -e "generating ${0%.svg}.png 48" && cairosvg -f png -o "../x1_5/${0%.svg}.png" --output-width 48 --output-height 48 $0' {} \;
 	find . -name "*.svg" -type f -exec sh -c 'echo -e "generating ${0%.svg}.png 64" && cairosvg -f png -o "../x2/${0%.svg}.png" --output-width 64 --output-height 64 $0' {} \;
 
-	cd $SRC
+	cd "$SRC"
 
 	# generate cursors
 	if [[ "$THEME" =~ White$ ]]; then
@@ -99,7 +114,7 @@ function create {
 }
 
 # generate pixmaps from svg source
-SRC=$PWD/src
+SRC="$PWD/src"
 THEME="Vimix Cursors"
 
 create svg
